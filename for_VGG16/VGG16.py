@@ -33,7 +33,7 @@ validation_data_dir = 'dataset/validation'
 nb_train_samples = 880
 nb_validation_samples = 220
 
-batch_size = 20
+batch_size = 55
 nb_epoch = 300
 
 
@@ -46,7 +46,7 @@ def vgg_model_maker():
 
     # VGG16のロード。FC層は不要なので include_top=False
     input_tensor = Input(shape=(img_width, img_height, 3))
-    vgg16 = VGG16(include_top=False, weights='imagenet', input_tensor=input_tensor)
+    vgg16 = VGG16(include_top=False, weights="imagenet", input_tensor=input_tensor)
 
     # FC層の作成
     top_model = Sequential()
@@ -73,7 +73,7 @@ def random_crop(img, crop_size):
     return img_array
 
 def set_tensor():
-    image_list = list()
+    image_list = []
     label_list = []
     
     for d in os.listdir(train_data_dir):
@@ -99,7 +99,7 @@ def set_tensor():
         f_image_list = np.array(image_list)
         Y = to_categorical(label_list)
         
-    val_image_list = list()
+    val_image_list = []
     val_label_list = []
     
     for d in os.listdir(validation_data_dir):
@@ -162,14 +162,15 @@ if __name__ == '__main__':
 
     # モデル作成
     vgg_model = vgg_model_maker()
-
+    
+    
     # 最後のconv層の直前までの層をfreeze
-    for layer in vgg_model.layers[:15]:
-        layer.trainable = False
-
+    for layer in vgg_model.layers[:]:
+        layer.trainable = True
+    
     # 多クラス分類を指定
     vgg_model.compile(loss='categorical_crossentropy',
-              optimizer=optimizers.SGD(lr=1e-6, momentum=0.9),
+              optimizer=optimizers.SGD(lr=1e-5, momentum=0.9),
               metrics=['accuracy'])
 
     # 画像のジェネレータ生成
