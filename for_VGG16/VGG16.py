@@ -33,7 +33,7 @@ validation_data_dir = 'dataset/validation'
 nb_train_samples = 880
 nb_validation_samples = 220
 
-batch_size = 55
+batch_size = 20
 nb_epoch = 300
 
 
@@ -73,7 +73,7 @@ def random_crop(img, crop_size):
     return img_array
 
 def set_tensor():
-    image_list = []
+    image_list = np.empty((0, img_width), float)
     label_list = []
     
     for d in os.listdir(train_data_dir):
@@ -92,14 +92,16 @@ def set_tensor():
             if file != ".DS_Store":
                 label_list.append(label)
                 filepath = d1 + "/" + file
-                image = np.asarray(random_crop(Image.open(filepath), (img_width, img_height)))
-                nom_image = (image / 255.0).tolist()
-                image_list.append(nom_image)
+                image_list = np.append(image_list,
+                                       np.asarray(random_crop(Image.open(filepath), (img_width, img_height)), dtype="float32") / 255.0,
+                                       axis=0)
+                #nom_image = (image / 255.0).tolist()
+                #image_list.append(nom_image)
         
-        f_image_list = np.array(image_list)
+        image_list = image_list.reshape(-1, img_height, img_width, 3)
         Y = to_categorical(label_list)
         
-    val_image_list = []
+    val_image_list = np.empty((0, img_width), float)
     val_label_list = []
     
     for d in os.listdir(validation_data_dir):
@@ -118,15 +120,17 @@ def set_tensor():
             if file != ".DS_Store":
                 val_label_list.append(label)
                 filepath = d1 + "/" + file
-                image = np.asarray(random_crop(Image.open(filepath), (img_width, img_height)))
+                val_image_list = np.append(val_image_list,
+                                  np.asarray(random_crop(Image.open(filepath), (img_width, img_height)), dtype="float32") / 255.0,
+                                  axis=0)
                 #image = np.asarray(Image.open(filepath).resize((img_width, img_height), Image.LANCZOS))
-                nom_image = (image / 255.0).tolist()
-                val_image_list.append(nom_image)
+                #nom_image = (image / 255.0).tolist()
+                #val_image_list.append(nom_image)
         
-        f_val_image_list = np.array(val_image_list)
+        val_image_list = val_image_list.reshape(-1, img_height, img_width, 3)
         val_Y = to_categorical(val_label_list)
     
-    return f_image_list, Y, f_val_image_list, val_Y
+    return image_list, Y, val_image_list, val_Y
 
 def image_generator():
     """ ディレクトリ内の画像を読み込んでトレーニングデータとバリデーションデータの作成 """
