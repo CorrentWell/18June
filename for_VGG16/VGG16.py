@@ -9,7 +9,7 @@ import os
 from keras.applications.vgg16 import VGG16
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, Model
-from keras.layers import Input, Activation, Dropout, Flatten, Dense
+from keras.layers import Input, Dropout, Conv2D, MaxPooling2D, Lambda, Dense, Flatten, BatchNormalization
 from keras import optimizers
 from keras.utils.np_utils import to_categorical
 from PIL import Image
@@ -23,7 +23,7 @@ import random
 classes = ["BG", "HCC"]
 nb_classes = len(classes)
 
-img_width, img_height = 150, 150
+img_width, img_height = 224, 224
 
 # トレーニング用とバリデーション用の画像格納先
 train_data_dir = 'dataset/train'
@@ -40,6 +40,51 @@ nb_epoch = 300
 result_dir = 'results'
 if not os.path.exists(result_dir):
     os.mkdir(result_dir)
+
+def set_vgg_model():
+    # inputs = Input(shape=(224, 224, 3))
+    inputs = Input(shape=(img_width, img_height, 3))
+    # Due to memory limitation, images will resized on-the-fly.
+    x = Lambda(lambda image: tf.image.resize_images(image, (224, 224)))(inputs)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(inputs)
+    x = BatchNormalization()(x)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), padding='same', name='block1_pool')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), padding='same', name='block2_pool')(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), padding='same', name='block3_pool')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), padding='same', name='block4_pool')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), padding='same', name='block5_pool')(x)
+    flattened = Flatten(name='flatten')(x)
+    x = Dense(4096, activation='relu', name='fc1')(flattened)
+    x = Dropout(0.5, name='dropout1')(x)
+    x = Dense(4096, activation='relu', name='fc2')(x)
+    x = Dropout(0.5, name='dropout2')(x)
+    predictions = Dense(nb_classes, activation='softmax', name='predictions')(x)
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
 
 def vgg_model_maker():
     """ VGG16のモデルをFC層以外使用。FC層のみ作成して結合して用意する """
