@@ -4,7 +4,7 @@ Created on Wed Aug 15 15:41:51 2018
 
 @author: coltn
 """
-
+#dataset:https://drive.google.com/drive/folders/1GSopUNnwjKea6UBDvue7MdkW34rs5PEu?usp=sharing
 import os
 from keras.applications.vgg16 import VGG16
 from keras.preprocessing.image import ImageDataGenerator
